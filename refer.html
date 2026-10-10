@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Refer & Earn — BetPulse</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+<div class="refer-container" style="max-width:600px;margin:0 auto;padding:16px;">
+  
+  <div class="header">
+    <div class="logo">BET<span>PULSE</span></div>
+    <div>
+      <span style="color:#ffab00;margin-right:12px;font-size:0.9rem;">🪙 <span id="goldDisplay">0</span></span>
+      <button class="btn btn-outline small" onclick="logout()"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+
+  <div class="user-bar">
+    <span><i class="fas fa-user"></i> <span class="name" id="usernameDisplay">User</span></span>
+    <span class="badge" id="accountBadge">Free</span>
+  </div>
+
+  <div class="refer-header">
+    <h1><i class="fas fa-users" style="-webkit-text-fill-color:#ff1744;"></i> Refer & Earn</h1>
+    <p>Invite friends and earn rewards! 🎁</p>
+  </div>
+
+  <!-- REFERRAL CODE -->
+  <div class="code-box" style="text-align:center;">
+    <div style="color:#888;font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;">Your Referral Code</div>
+    <div class="code" id="referralCode">SW-XXXX</div>
+    <div class="link" id="referralLink">www.BetPulse.zone.id/username</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn btn-outline small" onclick="copyCode()"><i class="fas fa-copy"></i> Copy Code</button>
+      <button class="btn btn-outline small" onclick="copyLink()"><i class="fas fa-link"></i> Copy Link</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="value" id="statReferrals">0</div><div class="label">Referrals</div></div>
+    <div class="stat-card"><div class="value gold" id="statCoins">0</div><div class="label">Golden Coins</div></div>
+    <div class="stat-card"><div class="value" style="color:#ffab00;" id="statTokens">0</div><div class="label">VIP Tokens</div></div>
+  </div>
+
+  <div style="text-align:center;margin:8px 0 12px;font-size:0.85rem;color:#888;">
+    1 referral = <strong style="color:#ffab00;">1 Golden Coin</strong> 
+    <span style="margin:0 8px;">•</span> 
+    3 referrals = <strong style="color:#ff1744;">1 FREE VIP Token!</strong>
+  </div>
+
+  <!-- SHARE BUTTONS -->
+  <div class="share-grid">
+    <a class="share-btn whatsapp" id="shareWhatsapp" target="_blank"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+    <a class="share-btn facebook" id="shareFacebook" target="_blank"><i class="fab fa-facebook"></i> Facebook</a>
+    <a class="share-btn twitter" id="shareTwitter" target="_blank"><i class="fab fa-twitter"></i> Twitter</a>
+    <a class="share-btn telegram" id="shareTelegram" target="_blank"><i class="fab fa-telegram"></i> Telegram</a>
+    <a class="share-btn email" id="shareEmail" target="_blank"><i class="fas fa-envelope"></i> Email</a>
+    <a class="share-btn sms" id="shareSms" target="_blank"><i class="fas fa-sms"></i> SMS</a>
+    <a class="share-btn linkedin" id="shareLinkedin" target="_blank"><i class="fab fa-linkedin"></i> LinkedIn</a>
+    <a class="share-btn reddit" id="shareReddit" target="_blank"><i class="fab fa-reddit"></i> Reddit</a>
+    <a class="share-btn copy-link" id="shareCopy" style="text-decoration:none;color:#888;"><i class="fas fa-link"></i> Copy Link</a>
+  </div>
+
+  <!-- MESSAGE PREVIEW -->
+  <div class="info-box">
+    <p style="color:#fff;font-weight:600;margin-bottom:4px;">📝 Your referral message:</p>
+    <div class="preview-box" id="messagePreview">Loading...</div>
+    <button class="btn btn-outline small" onclick="copyMessage()" style="margin-top:6px;"><i class="fas fa-copy"></i> Copy Message</button>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="info-box">
+    <p><i class="fas fa-info-circle" style="color:#ff1744;width:22px;"></i> <strong style="color:#fff;">How It Works</strong></p>
+    <p style="padding:4px 0;color:#888;font-size:0.85rem;"><i class="fas fa-1" style="color:#ff1744;width:22px;"></i> Share your referral link with friends</p>
+    <p style="padding:4px 0;color:#888;font-size:0.85rem;"><i class="fas fa-2" style="color:#ff1744;width:22px;"></i> They sign up using your link/code</p>
+    <p style="padding:4px 0;color:#888;font-size:0.85rem;"><i class="fas fa-3" style="color:#ff1744;width:22px;"></i> You get <strong style="color:#ffab00;">1 Golden Coin</strong> per referral</p>
+    <p style="padding:4px 0;color:#888;font-size:0.85rem;"><i class="fas fa-gift" style="color:#ff1744;width:22px;"></i> <strong style="color:#ff1744;">3 referrals = 1 FREE VIP Token!</strong></p>
+  </div>
+
+  <div style="text-align:center;margin-top:16px;">
+    <a href="/" style="color:#888;text-decoration:none;font-size:0.85rem;"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/login';
+
+let referralData = null;
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+async function loadData() {
+  try {
+    const userRes = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    const ud = await userRes.json();
+    if (ud.success) {
+      const u = ud.user;
+      document.getElementById('usernameDisplay').textContent = u.username;
+      document.getElementById('goldDisplay').textContent = u.goldenCoins || 0;
+      document.getElementById('accountBadge').textContent = u.accountType || 'Free';
+      document.getElementById('referralCode').textContent = u.referralCode || 'SW-XXXX';
+      document.getElementById('referralLink').textContent = 'www.BetPulse.zone.id/' + (u.username || 'username');
+      document.getElementById('statReferrals').textContent = u.referrals || 0;
+      document.getElementById('statCoins').textContent = u.goldenCoins || 0;
+      document.getElementById('statTokens').textContent = u.token ? 1 : 0;
+    }
+
+    const refRes = await fetch('/api/referral/share', { headers: { 'Authorization': 'Bearer ' + token } });
+    const refData = await refRes.json();
+    if (refData.success) {
+      referralData = refData;
+      document.getElementById('messagePreview').textContent = refData.message || 'Loading...';
+      
+      const platforms = refData.platforms || {};
+      if (platforms.whatsapp) document.getElementById('shareWhatsapp').href = platforms.whatsapp;
+      if (platforms.facebook) document.getElementById('shareFacebook').href = platforms.facebook;
+      if (platforms.twitter) document.getElementById('shareTwitter').href = platforms.twitter;
+      if (platforms.telegram) document.getElementById('shareTelegram').href = platforms.telegram;
+      if (platforms.email) document.getElementById('shareEmail').href = platforms.email;
+      if (platforms.sms) document.getElementById('shareSms').href = platforms.sms;
+      if (platforms.linkedin) document.getElementById('shareLinkedin').href = platforms.linkedin;
+      if (platforms.reddit) document.getElementById('shareReddit').href = platforms.reddit;
+      document.getElementById('shareCopy').onclick = function(e) { e.preventDefault(); copyLink(); };
+    }
+  } catch(e) { console.error('Load error:', e); }
+}
+
+function copyCode() {
+  const code = document.getElementById('referralCode').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('✅ Referral code copied!'))
+    .catch(() => { const input = document.createElement('input'); input.value = code; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input); showToast('✅ Referral code copied!'); });
+}
+
+function copyLink() {
+  const link = document.getElementById('referralLink').textContent;
+  const full = 'https://' + link;
+  navigator.clipboard.writeText(full).then(() => showToast('✅ Referral link copied!'))
+    .catch(() => { const input = document.createElement('input'); input.value = full; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input); showToast('✅ Referral link copied!'); });
+}
+
+function copyMessage() {
+  const msg = document.getElementById('messagePreview').textContent;
+  navigator.clipboard.writeText(msg).then(() => showToast('✅ Message copied!'))
+    .catch(() => { const input = document.createElement('input'); input.value = msg; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input); showToast('✅ Message copied!'); });
+}
+
+function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; }
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "style.css", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/login", "dest": "/login.html" },
+    { "src": "/register", "dest": "/register.html" },
+    { "src": "/dashboard", "dest": "/dashboard.html" },
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/refer", "dest": "/refer.html" },
+    { "src": "/terms", "dest": "/terms.html" },
+    { "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico))", "dest": "/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

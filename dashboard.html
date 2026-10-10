@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BetPulse — Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 10px; }
+    .odds-cell { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .odds-cell.odds-highlight { border-color: #00e676; background: rgba(0,230,118,.06); }
+    .odds-cell.odds-highlight .odds-value { color: #00e676; }
+    .odds-label { font-size: 0.55rem; color: #666; font-weight: 700; letter-spacing: 0.5px; }
+    .odds-value { font-size: 0.95rem; font-weight: 800; color: #fff; font-family: monospace; }
+    .odds-source { font-size: 0.5rem; color: #555; text-align: center; margin-top: 2px; letter-spacing: 0.5px; }
+    .odds-source.bookmaker { color: #00e676; }
+
+    .team-logo-sm { width: 22px; height: 22px; object-fit: contain; }
+    .team-logo-fallback-sm { width: 22px; height: 22px; border-radius: 50%; background: #1a1a1a; color: #888; display: flex; align-items: center; justify-content: center; font-size: .65rem; font-weight: 700; }
+    .result-team-side { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .result-team-side:last-child { justify-content: flex-end; }
+
+    .ecocash-box { background: rgba(0,230,118,.04); border: 1px solid rgba(0,230,118,.2); border-radius: 12px; padding: 14px; }
+    .ecocash-info { background: #0a0a0a; border-radius: 8px; padding: 10px; }
+    .ecocash-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: .82rem; color: #888; }
+    .ecocash-row strong { color: #00e676; font-family: monospace; }
+
+    .referral-slogan { background: linear-gradient(135deg, rgba(255,23,68,.08), rgba(255,171,0,.08)); border: 1px solid rgba(255,23,68,.2); border-radius: 10px; padding: 12px; color: #ccc; font-size: .82rem; line-height: 1.5; margin-bottom: 12px; }
+    .referral-slogan strong { color: #ffab00; }
+
+    .league-chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 10px; scrollbar-width: none; }
+    .league-chips::-webkit-scrollbar { display: none; }
+    .league-chip { flex-shrink: 0; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 20px; padding: 6px 12px; color: #ccc; font-size: .72rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .2s; display: flex; align-items: center; gap: 4px; }
+    .league-chip.active { border-color: #ff1744; background: rgba(255,23,68,.1); color: #fff; }
+    .league-chip .count { color: #ffab00; font-size: .6rem; margin-left: 2px; }
+
+    .live-hit { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: .65rem; font-weight: 700; margin-left: 6px; }
+    .live-hit.won { background: rgba(0,230,118,.15); color: #00e676; }
+    .live-hit.lost { background: rgba(255,23,68,.15); color: #ff1744; }
+    .live-hit.live { background: rgba(255,171,0,.15); color: #ffab00; }
+
+    .result-predictions { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a1a1a; display: flex; flex-direction: column; gap: 6px; }
+    .result-pred-row { display: flex; justify-content: space-between; align-items: center; font-size: .72rem; padding: 5px 8px; border-radius: 6px; background: #0a0a0a; }
+    .result-pred-row.hit { border-left: 3px solid #00e676; }
+    .result-pred-row.miss { border-left: 3px solid #ff1744; }
+    .result-pred-row.pending { border-left: 3px solid #ffab00; }
+    .result-pred-label { color: #888; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .result-pred-pick { color: #fff; font-weight: 700; }
+    .result-pred-status { font-weight: 700; }
+    .result-pred-status.hit { color: #00e676; }
+    .result-pred-status.miss { color: #ff1744; }
+
+    .knowledge-chip { display: inline-flex; align-items: center; gap: 3px; background: rgba(102,178,255,.1); color: #66b2ff; padding: 2px 6px; border-radius: 6px; font-size: .58rem; font-weight: 600; margin-right: 4px; margin-bottom: 3px; }
+    .knowledge-chip.green { background: rgba(0,230,118,.1); color: #00e676; }
+    .knowledge-chip.amber { background: rgba(255,171,0,.1); color: #ffab00; }
+    .knowledge-chip.red { background: rgba(255,23,68,.1); color: #ff1744; }
+
+    .goals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+    .goal-cell { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 8px 4px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+    .goal-cell.pick-over { border-color: rgba(0,230,118,.4); background: rgba(0,230,118,.04); }
+    .goal-cell.pick-under { border-color: rgba(255,171,0,.4); background: rgba(255,171,0,.04); }
+    .goal-cell.pick-yes { border-color: rgba(0,230,118,.4); background: rgba(0,230,118,.04); }
+    .goal-cell.pick-no { border-color: rgba(255,171,0,.4); background: rgba(255,171,0,.04); }
+    .goal-label { font-size: .55rem; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .goal-pick { font-size: .85rem; font-weight: 800; color: #fff; }
+    .goal-prob { font-size: .6rem; color: #66b2ff; font-family: monospace; font-weight: 700; }
+    .goal-odds { font-size: .7rem; font-weight: 800; font-family: monospace; padding: 2px 6px; border-radius: 4px; align-self: center; margin-top: 2px; }
+    .goal-odds.bookmaker { color: #00e676; background: rgba(0,230,118,.1); border: 1px solid rgba(0,230,118,.25); }
+    .goal-odds.implied { color: #888; background: #141414; border: 1px solid #1a1a1a; }
+    .goal-conf { font-size: .5rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 1px 5px; border-radius: 8px; align-self: center; }
+    .goal-conf.high { background: rgba(0,230,118,.2); color: #00e676; }
+    .goal-conf.medium { background: rgba(255,171,0,.2); color: #ffab00; }
+    .goal-conf.low { background: rgba(255,23,68,.2); color: #ff1744; }
+
+    .bookmaker-tag { display: inline-flex; align-items: center; gap: 4px; font-size: .6rem; color: #00e676; background: rgba(0,230,118,.08); border: 1px solid rgba(0,230,118,.2); padding: 2px 8px; border-radius: 10px; margin-top: 6px; }
+    .bookmaker-tag i { font-size: .55rem; }
+
+    .half-box { background: linear-gradient(135deg, rgba(102,178,255,.06), rgba(255,171,0,.04)); border: 1px solid rgba(102,178,255,.25); border-radius: 8px; padding: 8px 12px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; font-size: .78rem; }
+    .half-box .label { color: #888; font-weight: 600; font-size: .65rem; text-transform: uppercase; letter-spacing: .5px; }
+    .half-box .pick { color: #66b2ff; font-weight: 800; font-size: .95rem; }
+
+    .expected-goals-box { text-align: center; padding: 8px; background: #0a0a0a; border-radius: 8px; margin: 8px 0; font-size: .75rem; color: #888; }
+    .expected-goals-box strong { color: #00e676; font-family: monospace; font-size: .9rem; }
+
+    .ticket-list { display: flex; flex-direction: column; gap: 12px; }
+    .ticket-card { background: #141414; border: 1px solid #1a1a1a; border-radius: 12px; padding: 14px; position: relative; }
+    .ticket-card.vip-ticket { border-color: #ffab00; background: linear-gradient(135deg, rgba(255,171,0,.05), #141414); }
+    .ticket-card.won { border-color: #00e676; }
+    .ticket-card.lost { border-color: #ff1744; }
+    .ticket-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .ticket-title { color: #fff; font-weight: 700; font-size: .95rem; display: flex; align-items: center; gap: 6px; }
+    .ticket-title i { color: #ffab00; }
+    .ticket-info { color: #888; font-size: .72rem; margin-top: 2px; }
+    .ticket-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+    .ticket-badge { font-size: .55rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .ticket-badge.vip { background: rgba(255,171,0,.15); color: #ffab00; }
+    .ticket-badge.public { background: rgba(102,178,255,.15); color: #66b2ff; }
+    .ticket-badge.won { background: rgba(0,230,118,.15); color: #00e676; }
+    .ticket-badge.lost { background: rgba(255,23,68,.15); color: #ff1744; }
+    .ticket-badge.pending { background: rgba(255,171,0,.15); color: #ffab00; }
+    .ticket-badge.high { background: rgba(0,230,118,.15); color: #00e676; }
+    .ticket-badge.medium { background: rgba(255,171,0,.15); color: #ffab00; }
+    .ticket-badge.low { background: rgba(255,23,68,.15); color: #ff1744; }
+
+    .ticket-payout-box { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; padding: 10px; background: linear-gradient(135deg, rgba(0,230,118,.06), rgba(255,171,0,.04)); border: 1px solid rgba(0,230,118,.2); border-radius: 10px; }
+    .ticket-payout-item { text-align: center; }
+    .ticket-payout-label { font-size: .55rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .ticket-payout-value { font-size: 1rem; font-weight: 800; font-family: monospace; color: #00e676; }
+    .ticket-payout-value.odds { color: #ffab00; }
+    .ticket-payout-value.legs { color: #66b2ff; }
+
+    .ticket-legs-list { margin: 10px 0; padding: 10px; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a1a; }
+    .ticket-leg { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #141414; font-size: .78rem; }
+    .ticket-leg:last-child { border-bottom: none; }
+    .ticket-leg-match { color: #fff; font-weight: 600; }
+    .ticket-leg-pick { color: #00e676; font-weight: 700; }
+    .ticket-leg-odds { color: #ffab00; font-family: monospace; font-weight: 700; }
+
+    .ticket-description { color: #bbb; font-size: .8rem; margin-top: 8px; line-height: 1.5; white-space: pre-wrap; }
+    .ticket-note { font-size: .72rem; margin-top: 8px; padding: 6px 10px; border-radius: 6px; }
+    .ticket-note.won { background: rgba(0,230,118,.08); color: #00e676; }
+    .ticket-note.lost { background: rgba(255,23,68,.08); color: #ff1744; }
+
+    .ticket-locked-wrap { position: relative; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+    .ticket-locked-wrap > *:first-child { filter: blur(20px) brightness(0.5); transform: scale(1.05); }
+    .ticket-locked-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10,10,10,.5); color: #ffab00; text-align: center; padding: 20px; }
+    .ticket-locked-overlay i { font-size: 2rem; margin-bottom: 8px; }
+    .ticket-locked-overlay p { font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; font-size: .85rem; margin-bottom: 12px; }
+    .ticket-locked-overlay button { background: #ffab00; color: #0a0a0a; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 700; font-size: .75rem; cursor: pointer; }
+
+    .ticket-likes { display: flex; align-items: center; gap: 4px; color: #888; font-size: .78rem; padding: 4px 10px; border-radius: 6px; border: 1px solid #1a1a1a; cursor: pointer; background: transparent; }
+    .ticket-likes.liked { color: #ff1744; border-color: rgba(255,23,68,.3); }
+
+    .ticket-empty { text-align: center; padding: 40px 20px; color: #666; }
+    .ticket-empty i { font-size: 2rem; color: #333; margin-bottom: 12px; display: block; }
+    .ticket-empty p { font-size: .85rem; }
+
+    .perf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+    .perf-card { background: linear-gradient(135deg, #141414, #0d0d0d); border: 1px solid #1a1a1a; border-radius: 12px; padding: 16px; text-align: center; }
+    .perf-card .value { font-size: 1.6rem; font-weight: 800; color: #00e676; font-family: monospace; }
+    .perf-card .value.amber { color: #ffab00; }
+    .perf-card .value.red { color: #ff1744; }
+    .perf-card .value.blue { color: #66b2ff; }
+    .perf-card .label { font-size: .65rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+    .perf-section { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .perf-bar { height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+    .perf-bar-fill { height: 100%; background: linear-gradient(90deg, #ff1744, #ffab00, #00e676); border-radius: 4px; transition: width .5s; }
+
+    .rolling-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; background: linear-gradient(135deg, rgba(0,230,118,.06), rgba(255,171,0,.04)); border: 1px solid rgba(0,230,118,.2); border-radius: 12px; margin-bottom: 14px; }
+    .rolling-strip .item { text-align: center; }
+    .rolling-strip .num { font-size: 1.1rem; font-weight: 800; font-family: monospace; color: #00e676; }
+    .rolling-strip .num.amber { color: #ffab00; }
+    .rolling-strip .num.blue { color: #66b2ff; }
+    .rolling-strip .lbl { font-size: .55rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div class="logo">BET<span>PULSE</span></div>
+    <div class="header-right">
+      <span class="gold-badge"><i class="fas fa-coins"></i> <span id="coinsDisplay">0</span></span>
+      <button class="btn-logout" onclick="logout()"><i class="fas fa-times"></i></button>
+    </div>
+  </header>
+
+  <div class="user-bar">
+    <span><i class="fas fa-user"></i> <span id="usernameDisplay">User</span></span>
+    <span class="account-badge" id="accountType">Free</span>
+  </div>
+
+  <div class="swipe-container">
+    <div class="swipe-track" id="swipeTrack">
+
+      <div class="swipe-page">
+        <div class="page-header"><h2><i class="fas fa-bolt"></i> Goals Predictions</h2></div>
+        <div class="league-chips" id="leagueChips"></div>
+        <div id="todayPredictions"><p class="loading-text">Loading...</p></div>
+        <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+      </div>
+
+      <div class="swipe-page">
+        <div class="page-header">
+          <h2><i class="fas fa-ticket-alt"></i> Tickets</h2>
+          <span id="ticketsCount" style="font-size:.7rem;color:#666;"></span>
+        </div>
+        <div id="ticketsList" class="ticket-list"><p class="loading-text">Loading tickets...</p></div>
+        <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+      </div>
+
+      <div class="swipe-page">
+        <div class="page-header">
+          <h2><i class="fas fa-circle" style="color:#00e676;"></i> Live Games</h2>
+          <span id="liveUpdated" style="font-size:.65rem;color:#666;"></span>
+        </div>
+        <div id="liveList"><p class="loading-text">Loading...</p></div>
+        <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+      </div>
+
+      <div class="swipe-page">
+        <div class="page-header"><h2><i class="fas fa-history"></i> Results</h2></div>
+        <div id="resultsList"><p class="loading-text">Loading...</p></div>
+        <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+      </div>
+
+      <div class="swipe-page">
+        <div class="page-header"><h2><i class="fas fa-chart-line"></i> Performance</h2></div>
+        <div id="performanceContent"><p class="loading-text">Loading stats...</p></div>
+        <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+      </div>
+
+      <div class="swipe-page">
+        <div class="page-header"><h2><i class="fas fa-user-circle"></i> Profile</h2></div>
+
+        <div class="section">
+          <div class="profile-row"><span>Username</span><strong id="pUsername">--</strong></div>
+          <div class="profile-row"><span>Account</span><strong id="pAccount">Free</strong></div>
+          <div class="profile-row"><span>Plan</span><strong id="pPlan">--</strong></div>
+          <div class="profile-row"><span>Expires</span><strong id="pExpiry">--</strong></div>
+          <div class="profile-row"><span>BP Coins</span><strong id="pCoins" style="color:#ffab00;">0</strong></div>
+          <div class="profile-row"><span>Cash Earned</span><strong id="pCash" style="color:#00e676;">$0</strong></div>
+        </div>
+
+        <div class="section">
+          <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-crown"></i> Upgrade Plan</h3>
+          <div class="plan-grid">
+            <div class="plan-card" onclick="subscribeWhatsApp('day2')"><div class="plan-price">$1</div><div class="plan-days">2 Days</div><div class="plan-perks">Full access</div></div>
+            <div class="plan-card" onclick="subscribeWhatsApp('week2')"><div class="plan-price">$5</div><div class="plan-days">2 Weeks</div><div class="plan-perks">Full access</div></div>
+            <div class="plan-card featured" onclick="subscribeWhatsApp('month')"><div class="plan-price">$10</div><div class="plan-days">1 Month</div><div class="plan-perks">Best value <i class="fas fa-fire"></i></div></div>
+          </div>
+        </div>
+
+        <div class="section ecocash-box">
+          <h3 style="color:#00e676;margin-bottom:10px;"><i class="fas fa-mobile-alt"></i> Pay with EcoCash</h3>
+          <div class="ecocash-info">
+            <div class="ecocash-row"><span>EcoCash Number</span><strong>+263 77 534 2051</strong></div>
+            <div class="ecocash-row"><span>Account Name</span><strong>BetPulse</strong></div>
+            <div class="ecocash-row"><span>Reference</span><strong>Your Username</strong></div>
+          </div>
+          <button class="btn gold" style="width:100%;margin-top:10px;" onclick="subscribeWhatsApp('month')">
+            <i class="fab fa-whatsapp"></i> Subscribe Now via WhatsApp
+          </button>
+        </div>
+
+        <div class="section">
+          <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-key"></i> Activate Token</h3>
+          <div class="token-input">
+            <input type="text" id="tokenInput" placeholder="BP-XXXX-XXXX" />
+            <button onclick="activateToken()">Activate</button>
+          </div>
+          <div id="tokenMessage" style="margin-top:8px;font-size:.85rem;"></div>
+        </div>
+
+        <div class="section">
+          <h3 style="color:#ff1744;margin-bottom:8px;"><i class="fas fa-users"></i> Invite & Earn</h3>
+          <p class="referral-slogan">
+            <strong>Share BetPulse. Earn BP Coins.</strong><br>
+            <span>1 subscribed friend = 1 BP Coin.<br>Every 10 subscribed friends = $2 cash.</span>
+          </p>
+          <div class="ref-grid">
+            <div class="ref-stat"><span id="refTotal">0</span><small>Total</small></div>
+            <div class="ref-stat"><span id="refSubscribed">0</span><small>Subscribed</small></div>
+            <div class="ref-stat"><span id="refCoins">0</span><small>Coins</small></div>
+            <div class="ref-stat"><span id="refCash">$0</span><small>Earned</small></div>
+          </div>
+          <div class="ref-link-box">
+            <input type="text" id="refLink" readonly />
+            <button onclick="copyRefLink()"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn gold" style="width:100%;margin-top:8px;" onclick="shareReferral()">
+            <i class="fab fa-whatsapp"></i> Share on WhatsApp
+          </button>
+          <p class="ref-note">Next $2 cash at <strong id="refNext">10</strong> more subscribed referrals</p>
+        </div>
+
+        <div class="section">
+          <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-comments"></i> Community Chat</h3>
+          <div class="mini-chat" id="miniChat"></div>
+          <div class="mini-chat-input">
+            <input type="text" id="miniChatInput" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMiniChat()" />
+            <button onclick="sendMiniChat()"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+
+        <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+      </div>
+
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-page="0" onclick="goToPage(0)"><span><i class="fas fa-bolt"></i></span><span>Goals</span></button>
+    <button class="nav-btn" data-page="1" onclick="goToPage(1)"><span><i class="fas fa-ticket-alt"></i></span><span>Tickets</span></button>
+    <button class="nav-btn" data-page="2" onclick="goToPage(2)"><span><i class="fas fa-circle"></i></span><span>Live</span></button>
+    <button class="nav-btn" data-page="3" onclick="goToPage(3)"><span><i class="fas fa-history"></i></span><span>Results</span></button>
+    <button class="nav-btn" data-page="4" onclick="goToPage(4)"><span><i class="fas fa-chart-line"></i></span><span>Stats</span></button>
+    <button class="nav-btn" data-page="5" onclick="goToPage(5)"><span><i class="fas fa-user"></i></span><span>Profile</span></button>
+  </nav>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/login';
+
+let userData = null;
+let userSubscribed = false;
+let currentUsername = '';
+let chatInterval = null;
+let liveInterval = null;
+let activeLeague = null;
+const track = document.getElementById('swipeTrack');
+const navBtns = document.querySelectorAll('.nav-btn');
+let currentPageIdx = 0;
+
+async function loadUserData() {
+  try {
+    const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.success) { localStorage.removeItem('token'); window.location.href = '/login'; return; }
+    userData = data.user;
+    currentUsername = userData.username;
+    userSubscribed = !!data.subscribed;
+    updateUI(data);
+    if (userData.role === 'admin' || userData.role === 'superadmin') window.location.href = '/admin';
+    await loadReferral();
+  } catch (e) { localStorage.removeItem('token'); window.location.href = '/login'; }
+}
+
+function updateUI(d) {
+  const u = d.user;
+  document.getElementById('usernameDisplay').textContent = u.username;
+  document.getElementById('coinsDisplay').textContent = u.betpulseCoins || 0;
+  document.getElementById('accountType').textContent = userSubscribed ? 'VIP' : 'Free';
+  document.getElementById('pUsername').textContent = u.username;
+  document.getElementById('pAccount').textContent = userSubscribed ? 'VIP' : 'Free';
+  document.getElementById('pPlan').textContent = u.planKey || '--';
+  document.getElementById('pCoins').textContent = u.betpulseCoins || 0;
+  document.getElementById('pCash').textContent = '$' + (u.cashEarnedUSD || 0);
+  if (d.subscriptionExpiry) {
+    const days = Math.max(0, Math.floor((new Date(d.subscriptionExpiry) - Date.now()) / 86400000));
+    document.getElementById('pExpiry').textContent = `${days} days`;
+  } else {
+    document.getElementById('pExpiry').textContent = 'Not active';
+  }
+}
+
+function goToPage(idx) {
+  currentPageIdx = idx;
+  track.style.transform = `translateX(-${idx * 100}%)`;
+  navBtns.forEach((b, i) => b.classList.toggle('active', i === idx));
+  if (idx === 0) { loadLeagues(); loadToday(); }
+  if (idx === 1) loadTickets();
+  if (idx === 2) { loadLive(); startLiveRefresh(); }
+  else if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
+  if (idx === 3) loadResults();
+  if (idx === 4) loadPerformance();
+  if (idx === 5) { loadReferral(); initMiniChat(); }
+}
+
+function startLiveRefresh() {
+  if (liveInterval) clearInterval(liveInterval);
+  liveInterval = setInterval(() => { if (currentPageIdx === 2) loadLive(); }, 30000);
+}
+
+async function loadLeagues() {
+  try {
+    const res = await fetch('/api/leagues', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.success) return;
+    const chips = document.getElementById('leagueChips');
+    chips.innerHTML = `
+      <div class="league-chip ${activeLeague === null ? 'active' : ''}" onclick="selectLeague(null)">
+        <i class="fas fa-globe"></i> All
+      </div>
+      ${data.leagues.map(l => `
+        <div class="league-chip ${activeLeague === l.id ? 'active' : ''}" onclick="selectLeague(${l.id})">
+          ${l.emoji} ${l.name} ${l.matchCount ? `<span class="count">${l.matchCount}</span>` : ''}
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {}
+}
+
+function selectLeague(id) {
+  activeLeague = id;
+  loadLeagues();
+  loadToday();
+}
+
+async function loadToday() {
+  const c = document.getElementById('todayPredictions');
+  c.innerHTML = '<p class="loading-text">Loading predictions...</p>';
+  try {
+    const url = activeLeague
+      ? `/api/predictions/today?league=${activeLeague}`
+      : '/api/predictions/today';
+    const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.success || !data.predictions?.length) {
+      c.innerHTML = '<p class="loading-text">No predictions available right now</p>';
+      return;
+    }
+    let html = '';
+    if (!userSubscribed) {
+      html += `<div class="vip-lock-banner">
+        <i class="fas fa-crown"></i>
+        <div>
+          <strong>Upgrade for VIP goal markets</strong>
+          <p>Free shows all goals markets. VIP adds highest-scoring half + advanced tracking.</p>
+        </div>
+        <button onclick="goToPage(5)">Upgrade</button>
+      </div>`;
+    }
+    html += data.predictions.map(p => renderPrediction(p, userSubscribed)).join('');
+    c.innerHTML = html;
+  } catch (e) {
+    c.innerHTML = '<p class="loading-text">Error loading predictions</p>';
+  }
+}
+
+function renderPrediction(m, isVip) {
+  const p = m.prediction || {};
+  const k = m.knowledge || {};
+  const homeLogo = m.homeTeam.logo
+    ? `<img class="team-logo-circle" src="${m.homeTeam.logo}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback" style="display:none;">${m.homeTeam.name.charAt(0)}</span>`
+    : `<span class="team-logo-fallback">${m.homeTeam.name.charAt(0)}</span>`;
+  const awayLogo = m.awayTeam.logo
+    ? `<img class="team-logo-circle" src="${m.awayTeam.logo}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback" style="display:none;">${m.awayTeam.name.charAt(0)}</span>`
+    : `<span class="team-logo-fallback">${m.awayTeam.name.charAt(0)}</span>`;
+
+  const chips = [];
+  if (k.h2h?.matches) chips.push(`<span class="knowledge-chip green"><i class="fas fa-handshake"></i> H2H ${k.h2h.matches}</span>`);
+  if (k.steamMove) chips.push(`<span class="knowledge-chip amber"><i class="fas fa-fire"></i> Steam move</span>`);
+  if (k.leagueOver25Rate) chips.push(`<span class="knowledge-chip"><i class="fas fa-brain"></i> League O2.5 ${(k.leagueOver25Rate * 100).toFixed(0)}%</span>`);
+  if (k.homeHistory?.matchesLast7 >= 3 || k.awayHistory?.matchesLast7 >= 3) chips.push(`<span class="knowledge-chip red"><i class="fas fa-battery-quarter"></i> Fatigue</span>`);
+
+  const eg = p.expectedGoals || {};
+  const halfPick = p.highestHalf?.pick || 'Equal';
+  const halfConf = p.highestHalf?.confidence || 'low';
+
+  const bookTag = m.bookmaker ? `
+    <div style="text-align:center;">
+      <span class="bookmaker-tag"><i class="fas fa-circle"></i> LIVE ODDS — ${m.bookmaker.title}</span>
+    </div>` : '';
+
+  return `
+    <div class="prediction-card">
+      <div class="pred-teams">
+        <div class="pred-team">${homeLogo}<span class="team-name">${m.homeTeam.name}</span></div>
+        <div class="pred-vs">
+          <span class="kickoff">${formatTime(m.kickoff)}</span>
+          <span class="vs">VS</span>
+          <span class="league">${m.league}</span>
+        </div>
+        <div class="pred-team">${awayLogo}<span class="team-name">${m.awayTeam.name}</span></div>
+      </div>
+
+      ${chips.length ? `<div style="text-align:center;margin-bottom:8px;">${chips.join('')}</div>` : ''}
+
+      <div class="goals-grid">
+        ${p.over15 ? `
+          <div class="goal-cell ${p.over15.pick.includes('Over') ? 'pick-over' : 'pick-under'}">
+            <span class="goal-label">O/U 1.5</span>
+            <span class="goal-pick">${p.over15.pick}</span>
+            <span class="goal-prob">${p.over15.prob}%</span>
+            <span class="goal-odds ${m.markets?.overUnder15?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.overUnder15?.odds || 1.25).toFixed(2)}</span>
+            <span class="goal-conf ${p.over15.confidence}">${p.over15.confidence}</span>
+          </div>` : ''}
+        ${p.over25 ? `
+          <div class="goal-cell ${p.over25.pick.includes('Over') ? 'pick-over' : 'pick-under'}">
+            <span class="goal-label">O/U 2.5</span>
+            <span class="goal-pick">${p.over25.pick}</span>
+            <span class="goal-prob">${p.over25.prob}%</span>
+            <span class="goal-odds ${m.markets?.overUnder25?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.overUnder25?.odds || 1.85).toFixed(2)}</span>
+            <span class="goal-conf ${p.over25.confidence}">${p.over25.confidence}</span>
+          </div>` : ''}
+        ${p.btts ? `
+          <div class="goal-cell ${p.btts.pick === 'Yes' ? 'pick-yes' : 'pick-no'}">
+            <span class="goal-label">BTTS</span>
+            <span class="goal-pick">${p.btts.pick}</span>
+            <span class="goal-prob">${p.btts.prob}%</span>
+            <span class="goal-odds ${m.markets?.btts?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.btts?.odds || 1.75).toFixed(2)}</span>
+            <span class="goal-conf ${p.btts.confidence}">${p.btts.confidence}</span>
+          </div>` : ''}
+      </div>
+
+      ${isVip && p.over35 ? `
+        <div class="goals-grid" style="grid-template-columns: 1fr;">
+          <div class="goal-cell ${p.over35.pick.includes('Over') ? 'pick-over' : 'pick-under'}">
+            <span class="goal-label">O/U 3.5</span>
+            <span class="goal-pick">${p.over35.pick} · ${p.over35.prob}%</span>
+            <span class="goal-odds ${m.markets?.overUnder35?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.overUnder35?.odds || 2.4).toFixed(2)}</span>
+            <span class="goal-conf ${p.over35.confidence}">${p.over35.confidence}</span>
+          </div>
+        </div>` : ''}
+
+      ${isVip && halfPick !== 'Equal' ? `
+        <div class="half-box">
+          <div>
+            <div class="label">Highest Scoring Half</div>
+            <div class="pick">${halfPick} Half</div>
+          </div>
+          <span class="goal-conf ${halfConf}">${halfConf}</span>
+        </div>` : ''}
+
+      ${eg.total ? `
+        <div class="expected-goals-box">
+          Expected goals: <strong>${eg.total}</strong> (${eg.home} - ${eg.away})
+        </div>` : ''}
+
+      ${bookTag}
+    </div>`;
+}
+
+function formatTime(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+  } catch { return '--'; }
+}
+
+async function loadTickets() {
+  const c = document.getElementById('ticketsList');
+  c.innerHTML = '<p class="loading-text">Loading tickets...</p>';
+  try {
+    const res = await fetch('/api/user-tickets', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.success || !data.tickets?.length) {
+      c.innerHTML = `<div class="ticket-empty">
+        <i class="fas fa-ticket-alt"></i>
+        <p>Generating tickets...</p>
+        <p style="color:#555;font-size:.75rem;margin-top:6px;">Refresh in a moment</p>
+      </div>`;
+      document.getElementById('ticketsCount').textContent = '';
+      return;
+    }
+    document.getElementById('ticketsCount').textContent = `${data.tickets.length} ticket${data.tickets.length !== 1 ? 's' : ''}`;
+
+    c.innerHTML = data.tickets.map(t => {
+      const statusClass = t.status === 'won' ? 'won' : t.status === 'lost' ? 'lost' : 'pending';
+      const statusText = t.status === 'won' ? 'WON' : t.status === 'lost' ? 'LOST' : 'PENDING';
+      const hasLegs = t.legs && t.legs.length > 0;
+      const hasPayout = t.totalOdds > 0;
+
+      const legsHtml = hasLegs ? `
+        <div class="ticket-legs-list">
+          ${t.legs.map(l => `
+            <div class="ticket-leg">
+              <span class="ticket-leg-match">${l.match}</span>
+              <span class="ticket-leg-pick">${l.pick}</span>
+              <span class="ticket-leg-odds">${Number(l.odds).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>` : '';
+
+      const payoutHtml = hasPayout ? `
+        <div class="ticket-payout-box">
+          <div class="ticket-payout-item"><div class="ticket-payout-label">Total Odds</div><div class="ticket-payout-value odds">${t.totalOdds.toFixed(2)}x</div></div>
+          <div class="ticket-payout-item"><div class="ticket-payout-label">$1 Bet Wins</div><div class="ticket-payout-value">$${t.potentialPayout.toFixed(2)}</div></div>
+          <div class="ticket-payout-item"><div class="ticket-payout-label">Legs</div><div class="ticket-payout-value legs">${t.legs?.length || 0}</div></div>
+        </div>` : '';
+
+      if (t.locked) {
+        return `
+          <div class="ticket-card vip-ticket">
+            <div class="ticket-head">
+              <div>
+                <div class="ticket-title">${t.title || 'VIP Ticket'}</div>
+                <div class="ticket-badges"><span class="ticket-badge vip"><i class="fas fa-crown"></i> VIP</span></div>
+              </div>
+            </div>
+            <div class="ticket-locked-wrap">
+              ${legsHtml || payoutHtml || '<div style="height:100px;background:#1a1a1a;"></div>'}
+              <div class="ticket-locked-overlay">
+                <i class="fas fa-lock"></i>
+                <p>VIP Only</p>
+                <button onclick="goToPage(5)">Upgrade to view</button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      return `
+        <div class="ticket-card ${t.visibility === 'vip' ? 'vip-ticket' : ''} ${statusClass}">
+          <div class="ticket-head">
+            <div>
+              <div class="ticket-title"><i class="fas fa-bullseye"></i> ${t.title || t.matchInfo || 'Ticket'}</div>
+              ${t.matchInfo && t.title ? `<div class="ticket-info">${t.matchInfo}</div>` : ''}
+              <div class="ticket-badges">
+                ${t.visibility === 'vip' ? '<span class="ticket-badge vip"><i class="fas fa-crown"></i> VIP</span>' : '<span class="ticket-badge public">PUBLIC</span>'}
+                <span class="ticket-badge ${statusClass}">${statusText}</span>
+                ${t.confidence ? `<span class="ticket-badge ${t.confidence}">${t.confidence}</span>` : ''}
+                ${t.publishTier ? `<span class="ticket-badge">${t.publishTier}</span>` : ''}
+              </div>
+            </div>
+            <button class="ticket-likes ${(t.likedBy || []).includes(currentUsername) ? 'liked' : ''}" onclick="likeTicket('${t._id}', this)">
+              <i class="fas fa-heart"></i> <span>${t.likes || 0}</span>
+            </button>
+          </div>
+          ${payoutHtml}
+          ${legsHtml}
+          ${t.description ? `<div class="ticket-description">${escapeHtml(t.description)}</div>` : ''}
+          ${t.resultNote ? `<div class="ticket-note ${t.status}">${statusClass === 'won' ? '✓' : statusClass === 'lost' ? '✗' : '...'} ${escapeHtml(t.resultNote)}</div>` : ''}
+        </div>`;
+    }).join('');
+  } catch (e) {
+    c.innerHTML = '<p class="loading-text">Error loading tickets</p>';
+  }
+}
+
+async function likeTicket(id, btn) {
+  try {
+    const res = await fetch(`/api/tickets/${id}/like`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (data.success) {
+      btn.classList.toggle('liked', data.liked);
+      btn.querySelector('span').textContent = data.likes;
+    }
+  } catch (e) {}
+}
+
+async function loadLive() {
+  const c = document.getElementById('liveList');
+  if (!c.innerHTML || c.innerHTML.includes('Loading')) {
+    c.innerHTML = '<p class="loading-text">Loading live games...</p>';
+  }
+  try {
+    const res = await fetch('/api/predictions/live', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.live?.length) { c.innerHTML = '<p class="loading-text">No live games right now</p>'; return; }
+    document.getElementById('liveUpdated').textContent = 'Updated ' + new Date(data.updatedAt || Date.now()).toLocaleTimeString();
+
+    c.innerHTML = data.live.map(g => {
+      const homeLogo = g.homeTeam.logo
+        ? `<img class="team-logo-sm" src="${g.homeTeam.logo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback-sm" style="display:none;">${g.homeTeam.name.charAt(0)}</span>`
+        : `<span class="team-logo-fallback-sm">${g.homeTeam.name.charAt(0)}</span>`;
+      const awayLogo = g.awayTeam.logo
+        ? `<img class="team-logo-sm" src="${g.awayTeam.logo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback-sm" style="display:none;">${g.awayTeam.name.charAt(0)}</span>`
+        : `<span class="team-logo-fallback-sm">${g.awayTeam.name.charAt(0)}</span>`;
+
+      let goalTracks = '';
+      if (g.goalsTrack) {
+        const o25 = g.goalsTrack.over25;
+        const btts = g.goalsTrack.btts;
+        goalTracks = `
+          <div style="display:flex;gap:8px;font-size:.65rem;margin-top:6px;">
+            <span class="live-hit ${o25}">O2.5 ${o25 === 'won' ? '✓' : '...'}</span>
+            <span class="live-hit ${btts}">BTTS ${btts === 'won' ? '✓' : '...'}</span>
+          </div>`;
+      }
+
+      return `
+        <div class="live-card">
+          <div class="live-badge">
+            <i class="fas fa-circle" style="color:#00e676;"></i> LIVE ${g.minute || '--'}
+          </div>
+          <div class="live-teams">
+            <div class="result-team-side">${homeLogo}<span>${g.homeTeam.name}</span></div>
+            <span class="live-score">${g.score}</span>
+            <div class="result-team-side">${awayLogo}<span>${g.awayTeam.name}</span></div>
+          </div>
+          <div style="font-size:.7rem;color:#666;">${g.league} · ${g.totalGoals || 0} goals${g.btts ? ' · BTTS ✓' : ''}</div>
+          ${goalTracks}
+        </div>`;
+    }).join('');
+  } catch (e) { c.innerHTML = '<p class="loading-text">Error loading</p>'; }
+}
+
+async function loadResults() {
+  const c = document.getElementById('resultsList');
+  c.innerHTML = '<p class="loading-text">Loading results...</p>';
+  try {
+    const res = await fetch('/api/predictions/results', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.results?.length) { c.innerHTML = '<p class="loading-text">No recent results</p>'; return; }
+
+    c.innerHTML = data.results.map(r => {
+      const homeLogo = r.homeTeam.logo
+        ? `<img class="team-logo-sm" src="${r.homeTeam.logo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback-sm" style="display:none;">${r.homeTeam.name.charAt(0)}</span>`
+        : `<span class="team-logo-fallback-sm">${r.homeTeam.name.charAt(0)}</span>`;
+      const awayLogo = r.awayTeam.logo
+        ? `<img class="team-logo-sm" src="${r.awayTeam.logo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback-sm" style="display:none;">${r.awayTeam.name.charAt(0)}</span>`
+        : `<span class="team-logo-fallback-sm">${r.awayTeam.name.charAt(0)}</span>`;
+
+      const p = r.predictions || {};
+      const predRows = [];
+      const pushRow = (label, pick, correct) => {
+        if (!pick) return;
+        const cls = correct === true ? 'hit' : correct === false ? 'miss' : 'pending';
+        predRows.push(`
+          <div class="result-pred-row ${cls}">
+            <span class="result-pred-label">${label}</span>
+            <span class="result-pred-pick">${pick}</span>
+            <span class="result-pred-status ${cls}">${cls === 'hit' ? '✓' : cls === 'miss' ? '✗' : '...'}</span>
+          </div>`);
+      };
+      pushRow('O/U 1.5', p.over15, p.over15Correct);
+      pushRow('O/U 2.5', p.over25, p.over25Correct);
+      pushRow('O/U 3.5', p.over35, p.over35Correct);
+      pushRow('BTTS', p.btts, p.bttsCorrect);
+      pushRow('Highest Half', p.highestHalf, p.halfCorrect);
+
+      return `
+        <div class="result-card">
+          <div class="result-teams">
+            <div class="result-team-side">${homeLogo}<span>${r.homeTeam.name}</span></div>
+            <span class="result-score">${r.score}</span>
+            <div class="result-team-side">${awayLogo}<span>${r.awayTeam.name}</span></div>
+          </div>
+          <div class="result-meta">
+            <span style="color:#888;font-size:.7rem;">${r.league}</span>
+          </div>
+          ${r.halfTime ? `<div class="result-half">HT: ${r.halfTime} · ${r.totalGoals} goals · BTTS: ${r.btts ? 'Yes' : 'No'}</div>` : ''}
+          ${predRows.length ? `<div class="result-predictions">${predRows.join('')}</div>` : ''}
+        </div>`;
+    }).join('');
+  } catch (e) { c.innerHTML = '<p class="loading-text">Error loading</p>'; }
+}
+
+async function loadPerformance() {
+  const c = document.getElementById('performanceContent');
+  c.innerHTML = '<p class="loading-text">Loading stats...</p>';
+  try {
+    const res = await fetch('/api/performance', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    if (!data.success) { c.innerHTML = '<p class="loading-text">Could not load stats</p>'; return; }
+
+    const cls = (v, threshold) => v >= threshold ? '' : v >= threshold - 15 ? 'amber' : 'red';
+    const rolling = data.rolling;
+
+    c.innerHTML = `
+      ${rolling ? `
+        <div class="rolling-strip">
+          <div class="item"><div class="num">${rolling.over15Acc}%</div><div class="lbl">O1.5 (${rolling.sampleSize})</div></div>
+          <div class="item"><div class="num amber">${rolling.over25Acc}%</div><div class="lbl">O2.5</div></div>
+          <div class="item"><div class="num blue">${rolling.bttsAcc}%</div><div class="lbl">BTTS</div></div>
+        </div>` : ''}
+
+      <div class="perf-grid">
+        <div class="perf-card">
+          <div class="value ${cls(data.over15Accuracy, 80)}">${data.over15Accuracy}%</div>
+          <div class="label">Over 1.5</div>
+        </div>
+        <div class="perf-card">
+          <div class="value ${cls(data.over25Accuracy, 65)}">${data.over25Accuracy}%</div>
+          <div class="label">Over 2.5</div>
+        </div>
+        <div class="perf-card">
+          <div class="value ${cls(data.bttsAccuracy, 63)}">${data.bttsAccuracy}%</div>
+          <div class="label">BTTS</div>
+        </div>
+        <div class="perf-card">
+          <div class="value blue">${data.halfAccuracy}%</div>
+          <div class="label">Highest Half</div>
+        </div>
+      </div>
+
+      <div class="perf-section">
+        <h3 style="color:#ff1744;font-size:.9rem;margin-bottom:12px;"><i class="fas fa-database"></i> Sample</h3>
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;"><span style="color:#888;">Predictions logged</span><strong style="color:#fff;">${data.totalPredictions}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;"><span style="color:#888;">Settled</span><strong style="color:#fff;">${data.settledPredictions}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;"><span style="color:#888;">Tickets tracked</span><strong style="color:#fff;">${data.totalTicketsSettled}</strong></div>
+      </div>
+
+      <div class="perf-section">
+        <h3 style="color:#ff1744;font-size:.9rem;margin-bottom:6px;"><i class="fas fa-info-circle"></i> About These Stats</h3>
+        <p style="color:#888;font-size:.75rem;line-height:1.5;">
+          Stats update after each settled match. The AI learns from every result — weights, calibration, and meta-learners adjust automatically.
+        </p>
+      </div>
+    `;
+  } catch (e) { c.innerHTML = '<p class="loading-text">Error loading stats</p>'; }
+}
+
+async function loadReferral() {
+  try {
+    const res = await fetch('/api/referral/info', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    if (d.success) {
+      document.getElementById('refTotal').textContent = d.totalReferrals;
+      document.getElementById('refSubscribed').textContent = d.subscribedReferrals;
+      document.getElementById('refCoins').textContent = d.betpulseCoins;
+      document.getElementById('refCash').textContent = '$' + d.cashEarnedUSD;
+      document.getElementById('refLink').value = d.referralLink;
+      document.getElementById('refNext').textContent = d.nextCashAt;
+    }
+  } catch (e) {}
+}
+
+function copyRefLink() {
+  const v = document.getElementById('refLink');
+  v.select(); document.execCommand('copy');
+  showToast('Link copied');
+}
+
+function shareReferral() {
+  const link = document.getElementById('refLink').value;
+  const msg = [
+    '*BETPULSE — Predict. Play. Profit.*',
+    '',
+    'Get *daily winning goals predictions* — BTTS, Over 1.5, Over 2.5, and more.',
+    '',
+    `*Join with my link:* ${link}`,
+    '',
+    '_Winners use BetPulse._',
+  ].join('\n');
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+async function initMiniChat() {
+  await loadMiniChat();
+  if (chatInterval) clearInterval(chatInterval);
+  chatInterval = setInterval(loadMiniChat, 4000);
+}
+async function loadMiniChat() {
+  try {
+    const res = await fetch('/api/chat/messages', { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    const msgs = (data.messages || []).slice(-15);
+    const c = document.getElementById('miniChat');
+    c.innerHTML = msgs.map(m => `
+      <div class="mini-msg ${m.username === currentUsername ? 'mine' : ''}">
+        ${m.username !== currentUsername ? `<strong>${m.username}:</strong> ` : ''}
+        ${escapeHtml(m.text)}
+      </div>
+    `).join('') || '<p style="color:#555;font-size:.75rem;padding:10px 0;">No messages</p>';
+    c.scrollTop = c.scrollHeight;
+  } catch (e) {}
+}
+async function sendMiniChat() {
+  const input = document.getElementById('miniChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await fetch('/api/chat/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ text }),
+  });
+  loadMiniChat();
+}
+
+async function activateToken() {
+  const input = document.getElementById('tokenInput');
+  const msg = document.getElementById('tokenMessage');
+  const code = input.value.trim();
+  if (!code) { msg.style.color = '#ff1744'; msg.textContent = 'Enter a token'; return; }
+  msg.textContent = 'Activating...'; msg.style.color = '#ffab00';
+  const res = await fetch('/api/auth/activate-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ tokenCode: code }),
+  });
+  const data = await res.json();
+  if (data.success) { msg.style.color = '#00e676'; msg.textContent = data.message; input.value = ''; loadUserData(); }
+  else { msg.style.color = '#ff1744'; msg.textContent = 'Error: ' + data.error; }
+}
+
+function subscribeWhatsApp(plan) {
+  const plans = {
+    day2:  { label: '2 Days',  price: 1,  icon: 'bolt' },
+    week2: { label: '2 Weeks', price: 5,  icon: 'fire' },
+    month: { label: '1 Month', price: 10, icon: 'crown' },
+  };
+  const p = plans[plan] || plans.month;
+  const msg = [
+    '*BETPULSE VIP SUBSCRIPTION REQUEST*',
+    '',
+    `*Plan:* ${p.label}`,
+    `*Price:* $${p.price}`,
+    '',
+    '*EcoCash Payment Details*',
+    'Number: +263 77 534 2051',
+    'Name: BetPulse',
+    'Reference: Your Username',
+    '',
+    '*How to activate:*',
+    `1. Send $${p.price} to the number above`,
+    '2. Reply with your EcoCash SMS screenshot',
+    '3. I will activate your VIP within minutes',
+    '',
+    `User: ${currentUsername || 'guest'}`,
+  ].join('\n');
+  window.open(`https://wa.me/263775342051?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function logout() { localStorage.removeItem('token'); window.location.href = '/login'; }
+function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function showToast(t) {
+  const el = document.createElement('div');
+  el.className = 'toast show';
+  el.textContent = t;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+let startX = 0, isDragging = false;
+document.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging = true; });
+document.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  const diff = e.touches[0].clientX - startX;
+  if (Math.abs(diff) > 60) {
+    if (diff < 0 && currentPageIdx < 5) { goToPage(currentPageIdx + 1); isDragging = false; }
+    else if (diff > 0 && currentPageIdx > 0) { goToPage(currentPageIdx - 1); isDragging = false; }
+  }
+});
+document.addEventListener('touchend', () => { isDragging = false; });
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadUserData();
+  goToPage(0);
+});
+</script>
+</body>
+</html>

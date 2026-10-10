@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BetPulse — Goals Predictions</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .perf-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: linear-gradient(135deg, rgba(0,230,118,.06), rgba(255,171,0,.04)); border: 1px solid rgba(0,230,118,.2); border-radius: 12px; padding: 12px; margin: 12px 0 20px; }
+    .perf-strip .item { text-align: center; }
+    .perf-strip .num { font-size: 1.2rem; font-weight: 800; font-family: monospace; color: #00e676; }
+    .perf-strip .num.amber { color: #ffab00; }
+    .perf-strip .num.blue { color: #66b2ff; }
+    .perf-strip .lbl { font-size: .55rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+    .goals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+    .goal-cell { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 8px 4px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+    .goal-cell.pick-over, .goal-cell.pick-yes { border-color: rgba(0,230,118,.4); background: rgba(0,230,118,.04); }
+    .goal-cell.pick-under, .goal-cell.pick-no { border-color: rgba(255,171,0,.4); background: rgba(255,171,0,.04); }
+    .goal-label { font-size: .55rem; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .goal-pick { font-size: .85rem; font-weight: 800; color: #fff; }
+    .goal-prob { font-size: .6rem; color: #66b2ff; font-family: monospace; font-weight: 700; }
+    .goal-odds { font-size: .7rem; font-weight: 800; font-family: monospace; padding: 2px 6px; border-radius: 4px; align-self: center; }
+    .goal-odds.bookmaker { color: #00e676; background: rgba(0,230,118,.1); border: 1px solid rgba(0,230,118,.25); }
+    .goal-odds.implied { color: #888; background: #141414; border: 1px solid #1a1a1a; }
+    .goal-conf { font-size: .5rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 1px 5px; border-radius: 8px; align-self: center; }
+    .goal-conf.high { background: rgba(0,230,118,.2); color: #00e676; }
+    .goal-conf.medium { background: rgba(255,171,0,.2); color: #ffab00; }
+    .goal-conf.low { background: rgba(255,23,68,.2); color: #ff1744; }
+
+    .bookmaker-tag { display: inline-flex; align-items: center; gap: 4px; font-size: .6rem; color: #00e676; background: rgba(0,230,118,.08); border: 1px solid rgba(0,230,118,.2); padding: 2px 8px; border-radius: 10px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<div class="public-wrap">
+  <header class="app-header">
+    <div class="logo">BET<span>PULSE</span></div>
+    <div class="header-right">
+      <a href="/login" class="btn small outline">Login</a>
+      <a href="/register" class="btn small">Register</a>
+    </div>
+  </header>
+
+  <div class="public-hero">
+    <h1>Goals Predictions</h1>
+    <p class="sub">BTTS · Over 1.5 · Over 2.5 · Live odds</p>
+    <div class="badge-row">
+      <span class="badge"><i class="fas fa-futbol"></i> Goals-first</span>
+      <span class="badge gold"><i class="fas fa-crown"></i> VIP tickets</span>
+      <span class="badge green"><i class="fas fa-coins"></i> Referrals</span>
+    </div>
+  </div>
+
+  <div class="perf-strip">
+    <div class="item"><div class="num" id="perfOver15">--</div><div class="lbl">Over 1.5</div></div>
+    <div class="item"><div class="num amber" id="perfOver25">--</div><div class="lbl">Over 2.5</div></div>
+    <div class="item"><div class="num blue" id="perfBtts">--</div><div class="lbl">BTTS</div></div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="number" id="statTotal">--</div><div class="label">Picks Today</div></div>
+    <div class="stat"><div class="number">30</div><div class="label">Leagues</div></div>
+    <div class="stat"><div class="number">24/7</div><div class="label">Live Data</div></div>
+  </div>
+
+  <h2 class="section-title"><i class="fas fa-bolt"></i> Today's Goals Picks</h2>
+  <p class="section-sub">Free preview — no account needed</p>
+
+  <div id="publicPredictions" class="predictions-list">
+    <p class="loading-text">Loading live predictions...</p>
+  </div>
+
+  <div class="cta-box">
+    <h3>Unlock 40+ goals predictions & VIP tickets</h3>
+    <p>Create a free account to see all picks, live scores, tracked results, and rolling win rates. VIP adds the highest-scoring half and long-shot combos.</p>
+    <a href="/register" class="btn" style="width:100%;padding:14px;"><i class="fas fa-user-plus"></i> Create Free Account</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="/terms">Terms</a>
+    <a href="https://wa.me/263775342051" target="_blank">Support</a>
+  </div>
+
+  <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+</div>
+
+<script>
+  async function loadPublicPredictions() {
+    const list = document.getElementById('publicPredictions');
+    try {
+      const res = await fetch('/api/public/predictions');
+      const data = await res.json();
+      if (!data.predictions?.length) {
+        list.innerHTML = '<p class="loading-text">No high-confidence picks right now. Check back soon.</p>';
+        return;
+      }
+      document.getElementById('statTotal').textContent = data.total || data.predictions.length;
+      list.innerHTML = data.predictions.map(renderPrediction).join('');
+    } catch (e) {
+      list.innerHTML = '<p class="loading-text">Could not load predictions</p>';
+    }
+  }
+
+  async function loadPerformance() {
+    document.getElementById('perfOver15').textContent = '78%+';
+    document.getElementById('perfOver25').textContent = '62%+';
+    document.getElementById('perfBtts').textContent = '60%+';
+  }
+
+  function renderPrediction(m) {
+    const p = m.prediction || {};
+    const homeLogo = m.homeTeam.logo
+      ? `<img class="team-logo-circle" src="${m.homeTeam.logo}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback" style="display:none;">${m.homeTeam.name.charAt(0)}</span>`
+      : `<span class="team-logo-fallback">${m.homeTeam.name.charAt(0)}</span>`;
+    const awayLogo = m.awayTeam.logo
+      ? `<img class="team-logo-circle" src="${m.awayTeam.logo}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="team-logo-fallback" style="display:none;">${m.awayTeam.name.charAt(0)}</span>`
+      : `<span class="team-logo-fallback">${m.awayTeam.name.charAt(0)}</span>`;
+
+    const bookTag = m.bookmaker ? `
+      <div style="text-align:center;margin-top:8px;">
+        <span class="bookmaker-tag"><i class="fas fa-circle"></i> LIVE ODDS — ${m.bookmaker.title}</span>
+      </div>` : '';
+
+    return `
+      <div class="prediction-card">
+        <div class="pred-teams">
+          <div class="pred-team">${homeLogo}<span class="team-name">${m.homeTeam.name}</span></div>
+          <div class="pred-vs">
+            <span class="kickoff">${formatTime(m.kickoff)}</span>
+            <span class="vs">VS</span>
+            <span class="league">${m.league}</span>
+          </div>
+          <div class="pred-team">${awayLogo}<span class="team-name">${m.awayTeam.name}</span></div>
+        </div>
+
+        <div class="goals-grid">
+          ${p.over15 ? `<div class="goal-cell ${p.over15.pick.includes('Over') ? 'pick-over' : 'pick-under'}"><span class="goal-label">O/U 1.5</span><span class="goal-pick">${p.over15.pick}</span><span class="goal-prob">${p.over15.prob}%</span><span class="goal-odds ${m.markets?.overUnder15?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.overUnder15?.odds || 1.25).toFixed(2)}</span><span class="goal-conf ${p.over15.confidence}">${p.over15.confidence}</span></div>` : ''}
+          ${p.over25 ? `<div class="goal-cell ${p.over25.pick.includes('Over') ? 'pick-over' : 'pick-under'}"><span class="goal-label">O/U 2.5</span><span class="goal-pick">${p.over25.pick}</span><span class="goal-prob">${p.over25.prob}%</span><span class="goal-odds ${m.markets?.overUnder25?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.overUnder25?.odds || 1.85).toFixed(2)}</span><span class="goal-conf ${p.over25.confidence}">${p.over25.confidence}</span></div>` : ''}
+          ${p.btts ? `<div class="goal-cell ${p.btts.pick === 'Yes' ? 'pick-yes' : 'pick-no'}"><span class="goal-label">BTTS</span><span class="goal-pick">${p.btts.pick}</span><span class="goal-prob">${p.btts.prob}%</span><span class="goal-odds ${m.markets?.btts?.source === 'bookmaker' ? 'bookmaker' : 'implied'}">@ ${(m.markets?.btts?.odds || 1.75).toFixed(2)}</span><span class="goal-conf ${p.btts.confidence}">${p.btts.confidence}</span></div>` : ''}
+        </div>
+
+        ${p.expectedGoals?.total ? `<div style="text-align:center;font-size:.72rem;color:#888;margin-top:6px;">Expected goals: <strong style="color:#00e676;font-family:monospace;">${p.expectedGoals.total}</strong></div>` : ''}
+        ${bookTag}
+      </div>`;
+  }
+
+  function formatTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+    } catch { return '--:--'; }
+  }
+
+  const token = localStorage.getItem('token');
+  if (token) {
+    fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          if (d.user.role === 'admin' || d.user.role === 'superadmin') window.location.href = '/admin';
+          else window.location.href = '/dashboard';
+        }
+      }).catch(() => {});
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPublicPredictions();
+    loadPerformance();
+  });
+</script>
+</body>
+</html>

@@ -2119,7 +2119,7 @@ app.post('/api/auth/activate-token', auth, async (req, res) => {
 
 app.get('/api/referral/info', auth, async (req, res) => {
   const user = await User.findById(req.userId);
-  const domain = process.env.DOMAIN || 'betpulse.zone.id';
+  const domain = process.env.DOpredictediceback-bet.zone.id';
   const link = `https://${domain}/register?ref=${user.referralCode}`;
   const subscribed = user.subscribedReferrals || 0;
   res.json({

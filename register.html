@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — BetPulse</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .auth-box { background: #141414; padding: 32px; border-radius: 16px; border: 1px solid #1a1a1a; max-width: 400px; width: 100%; text-align: center; }
+    .auth-box h1 { color: #ff1744; font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+    .auth-box h1 span { color: #fff; }
+    .auth-sub { color: #888; margin-bottom: 24px; }
+    .input-group { display: flex; align-items: center; background: #0a0a0a; border-radius: 8px; border: 1px solid #1a1a1a; margin-bottom: 12px; padding: 0 14px; transition: border-color 0.2s; }
+    .input-group:focus-within { border-color: #ff1744; }
+    .input-group i { color: #555; margin-right: 10px; }
+    .input-group input { width: 100%; padding: 12px 0; background: transparent; border: none; color: #fff; font-size: 0.95rem; outline: none; }
+    .input-group input::placeholder { color: #555; }
+    .btn-primary { width: 100%; padding: 14px; background: #ff1744; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: #d50000; }
+    .auth-link { margin-top: 16px; color: #555; font-size: 0.9rem; }
+    .auth-link a { color: #ff1744; text-decoration: none; }
+    .auth-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="auth-box">
+    <h1>BET <span>PULSE</span></h1>
+    <p class="auth-sub">Create your account</p>
+    <form id="registerForm">
+      <div class="input-group">
+        <i class="fas fa-user"></i>
+        <input type="text" id="username" placeholder="Username" required />
+      </div>
+      <div class="input-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="password" placeholder="Password" required />
+      </div>
+      <div class="input-group" style="border-color:#ffab00;">
+        <i class="fas fa-gift" style="color:#ffab00;"></i>
+        <input type="text" id="referralCode" placeholder="Referral Code (optional)" />
+      </div>
+      <button type="submit" class="btn-primary"><i class="fas fa-user-plus"></i> Register</button>
+    </form>
+    <p class="auth-link">Already have an account? <a href="/login">Login</a></p>
+    <p class="auth-link"><a href="/terms">Terms & Conditions</a></p>
+  </div>
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const referralCode = document.getElementById('referralCode').value.trim();
+      if (!username || !password) { alert('Username and password required'); return; }
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, referralCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ Account created! You can now login.');
+          window.location.href = '/login';
+        } else {
+          alert('❌ Registration failed: ' + data.error);
+        }
+      } catch (error) {
+        alert('Registration error: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
